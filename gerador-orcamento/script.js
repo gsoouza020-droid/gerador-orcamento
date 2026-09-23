@@ -219,7 +219,7 @@ async function renderizarTabela() {
                     </select>
                 </td>
                 <td style="padding: 12px;">
-                    <button style="background: #e2e8f0; color: #0f172a; border: none; padding: 6px 10px; border-radius: 4px; cursor: not-allowed;" title="Em breve">Editar</button>
+                    <button onclick="excluirOrcamento('${orc.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Excluir</button>
                 </td>
             `;
 
@@ -244,6 +244,27 @@ async function mudarStatus(idDoOrcamento, novoStatus) {
         alert("Erro ao atualizar status.");
     } else {
         renderizarTabela(); // Recarrega a tabela para atualizar as cores
+    }
+}
+
+// Função para Excluir o Orçamento da Nuvem
+async function excluirOrcamento(idDoOrcamento) {
+    if (!supabaseCliente) return alert("Serviço indisponível.");
+
+    // Confirmação para evitar exclusões acidentais
+    const confirmacao = confirm("Tem a certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.");
+    if (!confirmacao) return;
+
+    const { error } = await supabaseCliente
+        .from('orcamentos')
+        .delete()
+        .eq('id', idDoOrcamento);
+
+    if (error) {
+        alert("Erro ao excluir o orçamento.");
+        console.error(error);
+    } else {
+        renderizarTabela(); // Recarrega a tabela para a linha sumir
     }
 }
 
