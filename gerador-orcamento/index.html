@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador Orcê</title>
+    <link rel="icon" type="image/svg+xml" href="imagem/img.fivcon.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Biblioteca Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca que transforma HTML em PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+    <!-- ====================================================== -->
+    <!-- TELA DE LOGIN (Visível por padrão)                     -->
+    <!-- ====================================================== -->
+    <div id="tela-login">
+        <div class="login-card">
+            <h2>Acesso ao Sistema</h2>
+            <p>Faça login ou crie sua conta para gerenciar orçamentos.</p>
+            <input type="email" id="auth-email" placeholder="Seu e-mail" autocomplete="email">
+            <input type="password" id="auth-senha" placeholder="Sua senha" autocomplete="current-password">
+            <button class="btn-entrar" onclick="fazerLogin()">Entrar</button>
+            <button class="btn-criar" onclick="criarConta()">Criar Conta Nova</button>
+            <p id="aviso-offline" style="display: none;"></p>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- SISTEMA DE ORÇAMENTOS (Escondido por padrão)           -->
+    <!-- ====================================================== -->
+    <div id="conteudo-app" style="display: none;">
+
+        <div class="topbar">
+            <span class="email-logado" id="email-logado"></span>
+            <button class="btn-sair" onclick="fazerLogout()">Sair da Conta</button>
+        </div>
+
+    <div class="container">
+        
+        <!-- LADO ESQUERDO: Formulário de Preenchimento -->
+        <div class="form-section">
+            <h2>Novo Orçamento</h2>
+            <p>Preencha os dados para gerar o documento.</p>
+            
+            <form id="form-orcamento">
+                <div class="secao-empresa" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <h3 style="font-size: 15px; color: #0f172a; margin-bottom: 12px;">Minha Empresa (Dados Fixos)</h3>
+
+                    <div class="input-group">
+                        <label>Nome da Sua Empresa / Seu Nome</label>
+                        <input type="text" id="minha-empresa" placeholder="Ex: Oficina do João" onkeyup="atualizarEmpresa()">
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>CNPJ ou CPF</label>
+                            <input type="text" id="meu-cnpj" placeholder="00.000.000/0001-00" onkeyup="atualizarEmpresa()">
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp / Telefone</label>
+                            <input type="text" id="meu-telefone" placeholder="(19) 99999-9999" onkeyup="atualizarEmpresa()">
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label>Logótipo da Empresa</label>
+                        <input type="file" id="upload-logo" accept="image/*" onchange="carregarLogo(event)">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Nome do Cliente / Empresa</label>
+                    <input type="text" id="cliente" placeholder="Ex: João da Silva" onkeyup="atualizarPreview()">
+                </div>
+
+                <div class="input-group">
+                    <label>Descrição do Serviço</label>
+                    <input type="text" id="servico" placeholder="Ex: Manutenção preventiva em Chevrolet Onix" onkeyup="atualizarPreview()">
+                </div>
+
+                <div class="input-group" style="position: relative;">
+                    <label>Material / Insumo</label>
+                    <input type="text" id="busca-material" placeholder="Ex: Pedra São Tomé, Tinta..." onkeyup="atualizarPreview()" oninput="buscarMaterialAPI()">
+                    <div id="lista-resultados" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Valor Materiais (R$)</label>
+                        <input type="number" id="pecas" placeholder="0.00" onkeyup="atualizarPreview()">
+                    </div>
+                    <div class="input-group">
+                        <label>Mão de Obra (R$)</label>
+                        <input type="number" id="mao-de-obra" placeholder="0.00" onkeyup="atualizarPreview()">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Validade do Orçamento (Dias)</label>
+                    <input type="number" id="validade" placeholder="Ex: 15" onkeyup="atualizarPreview()">
+                </div>
+
+                <button type="button" class="btn-gerar" onclick="gerarPDF()">Baixar Orçamento em PDF</button>
+                <button type="button" class="btn-salvar" onclick="salvarOrcamento()">Salvar Orçamento na Nuvem</button>
+            </form>
+        </div>
+
+        <!-- LADO DIREITO: Pré-visualização do Documento -->
+        <div class="preview-section">
+            <div class="folha-wrapper">
+                <!-- Esta é a div que será transformada em PDF -->
+                <div id="documento-pdf" class="folha-a4">
+                
+                <div class="cabecalho">
+                    <div class="logo-empresa" style="display: flex; align-items: center; gap: 15px;">
+                        <img id="img-logo-preview" src="" alt="Logótipo" style="max-height: 60px; display: none;">
+                        <div>
+                            <h2 id="out-minha-empresa" style="font-size: 20px; color: #0f172a;">Minha Empresa</h2>
+                            <p id="out-meu-cnpj" style="font-size: 12px; color: #64748b;">CNPJ: --</p>
+                            <p id="out-meu-telefone" style="font-size: 12px; color: #64748b;">Tel: --</p>
+                        </div>
+                    </div>
+                    <div class="info-data">
+                        <h1 class="titulo-doc">ORÇAMENTO</h1>
+                        <p id="data-atual">Data: 00/00/0000</p>
+                        <p id="hora-atual">Hora: --:--</p>
+                    </div>
+                </div>
+
+                <div class="dados-cliente">
+                    <h3>Dados do Cliente</h3>
+                    <p><strong>Nome:</strong> <span id="out-cliente">---</span></p>
+                    <p><strong>Serviço Solicitado:</strong> <span id="out-servico">---</span></p>
+                </div>
+
+                <table class="tabela-valores">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="out-nome-material">Materiais / Insumos</td>
+                            <td>R$ <span id="out-pecas">0,00</span></td>
+                        </tr>
+                        <tr>
+                            <td>Mão de Obra técnica</td>
+                            <td>R$ <span id="out-mao-de-obra">0,00</span></td>
+                        </tr>
+                        <tr class="linha-total">
+                            <td>TOTAL GERAL</td>
+                            <td>R$ <span id="out-total">0,00</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="rodape-doc">
+                    <p>Este orçamento é válido por <span id="out-validade">15</span> dias a partir da data de emissão.</p>
+                    <p class="agradecimento">Obrigado pela preferência!</p>
+                </div>
+
+            </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="historico-section">
+        <h3>Histórico de Orçamentos</h3>
+        <p class="historico-sub">Orçamentos salvos na nuvem aparecem aqui, em qualquer aparelho.</p>
+        <div class="tabela-wrapper">
+            <table class="tabela-historico">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Valor (R$)</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-historico"></tbody>
+            </table>
+        </div>
+    </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
