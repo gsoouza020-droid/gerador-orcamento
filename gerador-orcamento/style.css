@@ -7,15 +7,16 @@
 
 body {
     background-color: #f1f5f9;
-    padding: 40px 20px;
+    padding: clamp(15px, 3vw, 40px) 20px;
     color: #333;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
+    width: 100%;
     margin: 0 auto;
     display: flex;
-    gap: 40px;
+    gap: clamp(20px, 4vw, 40px);
     align-items: flex-start;
     flex-wrap: wrap;
 }
@@ -23,11 +24,11 @@ body {
 /* Lado Esquerdo - Formulário */
 .form-section {
     background: #ffffff;
-    padding: 30px;
+    padding: clamp(20px, 3vw, 30px);
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    flex: 1;
-    min-width: 320px;
+    flex: 1 1 350px;
+    min-width: 280px;
 }
 
 .form-section h2 {
@@ -97,10 +98,11 @@ input:focus {
 
 /* Lado Direito - Folha A4 (Preview) */
 .preview-section {
-    flex: 1.5;
-    min-width: 400px;
+    flex: 1.5 1 450px;
+    min-width: 280px;
     display: flex;
     justify-content: center;
+    width: 100%;
 }
 
 .folha-a4 {
@@ -207,18 +209,25 @@ input:focus {
    ============================ */
 @media (max-width: 900px) {
     body {
-        padding: 16px;
+        padding: 16px 10px;
     }
 
     .container {
         flex-direction: column;
-        gap: 24px;
+        gap: 20px;
     }
 
-    .form-section,
+    .form-section {
+        padding: 20px;
+        min-width: 100%;
+        flex: 1 1 100%;
+    }
+
     .preview-section {
         min-width: 100%;
         flex: 1 1 100%;
+        overflow-x: hidden;
+        justify-content: flex-start;
     }
 
     .input-row {
@@ -227,18 +236,17 @@ input:focus {
     }
 
     /* Reserva o espaço da folha A4 já no tamanho reduzido
-       (100vw - 32px = padding do body: 16px de cada lado)
        O JavaScript recalcula este valor na medida real do conteúdo */
     .folha-wrapper {
         width: 100%;
-        height: calc((100vw - 32px) * 1.41);
+        height: auto;
         overflow: hidden;
+        display: flex;
+        justify-content: center;
     }
 
-    /* Reduz a folha A4 (210mm = 794px) proporcionalmente ao espaço real disponível */
     .folha-a4 {
         transform-origin: top center;
-        transform: scale(calc((100vw - 32px) * 0.0012594));
     }
 }
 
@@ -414,66 +422,158 @@ input:focus {
 @media (max-width: 900px) {
     #tela-login {
         min-height: calc(100vh - 32px);
+        padding: 15px;
+    }
+
+    .login-card {
+        padding: 25px 20px;
     }
 
     .historico-section {
         margin: 16px 0 0;
-        padding: 16px;
+        padding: 20px;
+        overflow: hidden;
     }
 
-    /* ==========================================
-       AJUSTES RESPONSIVOS DEFINITIVOS (MOBILE/TABLET)
-       ========================================== */
-
-    /* Impede que paddings estiquem caixas para fora da tela */
-    *, *::before, *::after {
-        box-sizing: border-box !important;
-    }
-
-    /* Trava a largura e impede o scroll horizontal (balanço) */
-    html, body {
-        width: 100% !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
-        overflow-y: auto;
-        margin: 0 !important;
-        position: relative !important;
-        overscroll-behavior-x: none !important; /* impede o "esticar" da tela para os lados no mobile */
-    }
-
-    /* Nenhuma imagem pode estourar a largura da tela */
-    img {
-        max-width: 100% !important;
-        height: auto;
-    }
-
-    /* Container sempre como lista empilhada, centralizada, sem empurrões para o lado */
-    .container {
-        width: 100% !important;
-        max-width: 100vw !important;
-        margin: 0 auto !important;
-        margin-left: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-    }
-
-    /* Formulário usa toda a largura disponível sem estourar */
-    form {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    /* Inputs do formulário flúidos; 16px evita o zoom automático do iPhone ao digitar
-       (botões do topo e da tabela de histórico ficam intactos) */
-    form input,
-    form select,
-    form textarea,
-    form button {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
+    /* Ajustes nos inputs para evitar zoom no iOS (font-size >= 16px) */
+    input, select, textarea, button {
         font-size: 16px !important;
     }
+
+    .tabela-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .cabecalho {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .info-data {
+        text-align: center;
+    }
+}
+
+/* ============================
+   CLASSE DA SUGESTÃO IA
+   ============================ */
+.item-sugestao {
+    padding: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    font-size: 14px;
+    background: white;
+    color: #333;
+}
+
+.item-sugestao:hover {
+    background: #eff6ff;
+}
+
+/* ============================
+   MODO NOTURNO
+   ============================ */
+body.dark-mode {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
+body.dark-mode .form-section,
+body.dark-mode .preview-section,
+body.dark-mode .historico-section,
+body.dark-mode .login-card,
+body.dark-mode .topbar {
+    background: #1e293b;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    border-color: #334155;
+}
+
+body.dark-mode .form-section h2, 
+body.dark-mode .historico-section h3, 
+body.dark-mode .login-card h2,
+body.dark-mode label {
+    color: #f8fafc;
+}
+
+body.dark-mode p, 
+body.dark-mode .historico-sub {
+    color: #94a3b8;
+}
+
+body.dark-mode input, 
+body.dark-mode select {
+    background: #0f172a;
+    color: #f8fafc;
+    border-color: #334155;
+}
+
+body.dark-mode input:focus {
+    border-color: #3b82f6;
+}
+
+body.dark-mode .secao-empresa {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+body.dark-mode .secao-empresa h3 {
+    color: #f8fafc !important;
+}
+
+body.dark-mode .tabela-historico th {
+    background: #334155;
+    color: #f8fafc;
+    border-bottom: 1px solid #475569;
+}
+
+body.dark-mode .tabela-historico td {
+    border-bottom: 1px solid #334155;
+    color: #cbd5e1 !important;
+}
+
+/* O PDF SEMPRE PRECISA FICAR CLARO (BRANCO) */
+body.dark-mode .folha-a4 {
+    background: white !important;
+    color: #333 !important; /* Cores originais do texto no PDF */
+}
+
+body.dark-mode .folha-a4 h1,
+body.dark-mode .folha-a4 h2,
+body.dark-mode .folha-a4 h3,
+body.dark-mode .folha-a4 p,
+body.dark-mode .folha-a4 td,
+body.dark-mode .folha-a4 th,
+body.dark-mode .folha-a4 span {
+    color: #0f172a !important; /* Força escuro sobre branco no PDF */
+}
+
+body.dark-mode .folha-a4 .linha-total td {
+    color: #1e3a8a !important;
+}
+
+body.dark-mode .folha-a4 .linha-total span {
+    color: #1e3a8a !important;
+}
+
+body.dark-mode .folha-a4 .dados-cliente {
+    background: #f8f9fa !important;
+}
+
+/* Lista da Inteligência Artificial */
+body.dark-mode #lista-resultados {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+body.dark-mode .item-sugestao {
+    border-bottom: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    background: #1e293b;
+}
+
+body.dark-mode .item-sugestao:hover {
+    background: #334155 !important;
 }

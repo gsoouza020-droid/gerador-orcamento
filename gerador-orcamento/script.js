@@ -48,7 +48,7 @@ function aplicarEstadoSessao(session) {
         conteudoApp.style.display = 'block';
         emailLogado.innerText = `Logado como: ${session.user.email}`;
         renderizarTabela();
-        setTimeout(ajustarPreviaMobile, 50); // Folha só fica visível após o login
+        setTimeout(ajustarPrevia, 50); // Folha só fica visível após o login
     } else {
         telaLogin.style.display = 'flex';
         conteudoApp.style.display = 'none';
@@ -183,6 +183,9 @@ async function salvarOrcamento() {
     }
 }
 
+// Variável global para armazenar os dados do histórico para exportação
+let orcamentosCarregadosGlobais = [];
+
 // Função para desenhar a Tabela puxando os dados da Nuvem
 async function renderizarTabela() {
     const tbody = document.getElementById('tabela-historico');
@@ -204,6 +207,8 @@ async function renderizarTabela() {
             .order('data_criacao', { ascending: false });
 
         if (error) throw new Error(error.message);
+
+        orcamentosCarregadosGlobais = orcamentos || [];
 
         if (!orcamentos || orcamentos.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Nenhum orçamento salvo na sua conta ainda.</td></tr>';
@@ -234,14 +239,15 @@ async function renderizarTabela() {
                 <td style="padding: 12px; font-weight: bold; color: #0f172a;">${orc.cliente}</td>
                 <td style="padding: 12px; color: #2563eb; font-weight: bold;">${valorFormatado}</td>
                 <td style="padding: 12px;">
-                    <select onchange="mudarStatus('${orc.id}', this.value)" style="padding: 5px; border-radius: 4px; border: 1px solid ${corStatus}; color: ${corStatus}; font-weight: bold; outline: none; cursor: pointer;">
+                    <select onchange="mudarStatus('${orc.id}', this.value)" style="padding: 5px; border-radius: 4px; border: 1px solid ${corStatus}; color: ${corStatus}; font-weight: bold; outline: none; cursor: pointer; background: transparent;">
                         <option value="Pendente" ${orc.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                         <option value="Em Negociação" ${orc.status === 'Em Negociação' ? 'selected' : ''}>Em Negociação</option>
                         <option value="Aprovado" ${orc.status === 'Aprovado' ? 'selected' : ''}>Aprovado!</option>
                         <option value="Recusado" ${orc.status === 'Recusado' ? 'selected' : ''}>Recusado</option>
                     </select>
                 </td>
-                <td style="padding: 12px;">
+                <td style="padding: 12px; display: flex; gap: 5px;">
+                    <button onclick="baixarPDFHistorico('${orc.id}')" style="background: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">PDF</button>
                     <button onclick="excluirOrcamento('${orc.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Excluir</button>
                 </td>
             `;
@@ -268,6 +274,81 @@ async function mudarStatus(idDoOrcamento, novoStatus) {
     } else {
         renderizarTabela(); // Recarrega a tabela para atualizar as cores
     }
+}
+
+// ==========================================
+// FUNÇÕES DO HISTÓRICO
+// ==========================================
+
+// Função para baixar o arquivo PDF (no estilo do orçamento) a partir do histórico
+function baixarPDFHistorico(id) {
+    const orc = orcamentosCarregadosGlobais.find(o => o.id === id);
+    if (!orc) return alert('Orçamento não encontrado no histórico.');
+
+    // 1. Salva os valores atuais que estão na folha A4 para não perdê-los
+    const formOriginal = {
+        cliente: document.getElementById('out-cliente').innerText,
+        servico: document.getElementById('out-servico').innerText,
+        pecas: document.getElementById('out-pecas').innerText,
+        maoObra: document.getElementById('out-mao-de-obra').innerText,
+        total: document.getElementById('out-total').innerText,
+        data: document.getElementById('data-atual').innerText
+    };
+
+    // 2. Injura os dados do histórico temporariamente na folha
+    document.getElementById('out-cliente').innerText = orc.cliente;
+    document.getElementById('out-servico').innerText = orc.servico || '---';
+    
+    const formatoMoeda = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    document.getElementById('out-pecas').innerText = parseFloat(orc.valor_pecas).toLocaleString('pt-BR', formatoMoeda);
+    document.getElementById('out-mao-de-obra').innerText = parseFloat(orc.valor_maodeobra).toLocaleString('pt-BR', formatoMoeda);
+    document.getElementById('out-total').innerText = parseFloat(orc.valor_total).toLocaleString('pt-BR', formatoMoeda);
+    
+    let dataFmt = '---';
+    if (orc.data_criacao) {
+        const d = new Date(orc.data_criacao);
+        if (!isNaN(d.getTime())) dataFmt = d.toLocaleDateString('pt-BR');
+    }
+    document.getElementById('data-atual').innerText = `Data: ${dataFmt}`;
+
+    // 3. Prepara a folha e gera o PDF (mesma lógica antierros)
+    const elemento = document.getElementById('documento-pdf');
+    const wrapper = document.querySelector('.folha-wrapper');
+    const preview = document.querySelector('.preview-section');
+
+    elemento.style.transform = 'none';
+    const overOriginal = wrapper.style.overflow;
+    const justOriginal = wrapper.style.justifyContent;
+    const prevOverOriginal = preview.style.overflowX;
+
+    wrapper.style.overflow = 'visible';
+    wrapper.style.justifyContent = 'flex-start';
+    preview.style.overflowX = 'visible';
+    window.scrollTo(0, 0);
+
+    const opcoes = {
+        margin:       0,
+        filename:     `Historico_Orcamento_${orc.cliente}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, scrollY: 0, scrollX: 0, windowWidth: 1000 }, 
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opcoes).from(elemento).save().then(() => {
+        // 4. Restaura a tela e os valores do formulário para o usuário continuar trabalhando
+        wrapper.style.overflow = overOriginal;
+        wrapper.style.justifyContent = justOriginal;
+        preview.style.overflowX = prevOverOriginal;
+        
+        document.getElementById('out-cliente').innerText = formOriginal.cliente;
+        document.getElementById('out-servico').innerText = formOriginal.servico;
+        document.getElementById('out-pecas').innerText = formOriginal.pecas;
+        document.getElementById('out-mao-de-obra').innerText = formOriginal.maoObra;
+        document.getElementById('out-total').innerText = formOriginal.total;
+        document.getElementById('data-atual').innerText = formOriginal.data;
+        
+        ajustarPrevia();
+    });
 }
 
 // Função para Excluir o Orçamento da Nuvem
@@ -312,6 +393,14 @@ function atualizarEmpresa() {
 
 // Assim que a página carrega, insere a data atual automaticamente no documento
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. Restaurar Tema Escuro
+    const temaSalvo = lerDaMemoria('tema-escuro');
+    if (temaSalvo === 'sim') {
+        document.body.classList.add('dark-mode');
+        const btn = document.getElementById('btn-tema-flutuante');
+        if (btn) btn.innerText = '☀️';
+    }
+
     const dataAtual = new Date().toLocaleDateString('pt-BR');
     document.getElementById('data-atual').innerText = `Data: ${dataAtual}`;
 
@@ -395,23 +484,26 @@ function atualizarPreview() {
     document.getElementById('out-mao-de-obra').innerText = maoDeObra.toLocaleString('pt-BR', formatoMoeda);
     document.getElementById('out-total').innerText = total.toLocaleString('pt-BR', formatoMoeda);
 
-    ajustarPreviaMobile();
+    ajustarPrevia();
 }
 
-// Ajusta a altura do contêiner da folha no mobile/tablet para acompanhar o scale dinâmico
-// e impedir que o rodapé/descrições da folha sejam cortados quando o conteúdo cresce.
-// O scale é aplicado via inline (estilo direto) para funcionar mesmo que o CSS não carregue (cache).
-function ajustarPreviaMobile() {
-    if (!window.matchMedia('(max-width: 900px)').matches) return;
-
+// Ajusta a escala da folha dinamicamente para caber em qualquer tamanho de tela
+function ajustarPrevia() {
     const wrapper = document.querySelector('.folha-wrapper');
     const folha = document.getElementById('documento-pdf');
-    if (!wrapper || !folha || !folha.offsetHeight) return; // folha invisível (sem login) = não ajusta
+    if (!wrapper || !folha || !folha.offsetHeight) return; // folha invisível = não ajusta
 
-    // Largura útil = viewport - 32px (padding do body: 16px de cada lado)
-    const escala = (window.innerWidth - 32) / 794;
+    // Usa a largura real do contêiner pai, com uma margem de segurança de 20px
+    let larguraDisponivel = wrapper.clientWidth - 20;
+    if (larguraDisponivel < 100) larguraDisponivel = window.innerWidth - 32;
 
-    // Aplica a redução e a origem direto no elemento (style inline tem prioridade sobre o CSS)
+    // A4 width = 794px
+    let escala = larguraDisponivel / 794;
+    
+    // Não estica além do tamanho real A4 (100%)
+    if (escala > 1) escala = 1;
+
+    // Aplica a redução e a origem direto no elemento
     folha.style.transform = 'scale(' + escala + ')';
     folha.style.transformOrigin = 'top center';
 
@@ -420,9 +512,9 @@ function ajustarPreviaMobile() {
 }
 
 // Recalcula ao girar/redimensionar a tela e após o carregamento
-window.addEventListener('resize', ajustarPreviaMobile);
+window.addEventListener('resize', ajustarPrevia);
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(ajustarPreviaMobile, 100);
+    setTimeout(ajustarPrevia, 100);
 });
 
 const GEMINI_API_KEY = 'AQ.Ab8RN6KQdhCTNciBmk4Wm8ICEiKQ0YtvnBIIkzcs5xI-c4U9Qw';
@@ -485,14 +577,8 @@ async function buscarMaterialAPI() {
                 if(!produto) return;
                 
                 const item = document.createElement('div');
+                item.className = 'item-sugestao';
                 item.innerText = produto;
-                item.style.padding = '10px';
-                item.style.borderBottom = '1px solid #f1f5f9';
-                item.style.cursor = 'pointer';
-                item.style.fontSize = '14px';
-
-                item.onmouseover = () => item.style.backgroundColor = '#eff6ff';
-                item.onmouseout = () => item.style.backgroundColor = 'white';
 
                 // Ao clicar na sugestão da IA, preenche o input e atualiza o PDF
                 item.onclick = () => {
@@ -521,39 +607,79 @@ document.addEventListener('click', function(event) {
 
 // Função para gerar e baixar o PDF
 function gerarPDF() {
-    // Seleciona a div exata que será transformada em PDF
-    const elemento = document.getElementById('documento-pdf');
-
-    // No celular, remove a redução visual para o PDF sair em tamanho A4 cheio
-    const emTelaPequena = window.matchMedia('(max-width: 900px)').matches;
-    if (emTelaPequena) {
-        elemento.style.transform = 'none';
-        elemento.style.transformOrigin = 'top center';
+    const btn = document.querySelector('.btn-gerar');
+    const textoOriginal = btn ? btn.innerText : 'Baixar Orçamento em PDF';
+    
+    // Feedback visual imediato
+    if (btn) {
+        btn.innerText = 'Gerando... Aguarde';
+        btn.disabled = true;
     }
 
-    // Corrige o "espaço em branco no topo": rola a página para o início antes de capturar
-    window.scrollTo(0, 0);
-    
-    // Pega o nome do cliente para usar no nome do arquivo baixado
-    let nomeCliente = document.getElementById('cliente').value;
-    if(nomeCliente === "") nomeCliente = "Cliente";
+    try {
+        // Seleciona a div exata que será transformada em PDF
+        const elemento = document.getElementById('documento-pdf');
+        const wrapper = document.querySelector('.folha-wrapper');
+        const preview = document.querySelector('.preview-section');
 
-    // Configurações do PDF (Qualidade, formato A4, escala)
-    const opcoes = {
-        margin:       0,
-        filename:     `Orcamento_${nomeCliente}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, scrollY: 0 }, // scrollY: 0 evita conteúdo deslocado ao capturar
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+        // Remove a redução visual para o PDF sair no tamanho e proporção A4 exatos
+        elemento.style.transform = 'none';
 
-    // Aciona a biblioteca html2pdf e restaura a redução visual no celular ao final
-    html2pdf().set(opcoes).from(elemento).save().then(() => {
-        if (emTelaPequena) {
-            elemento.style.transform = '';
-            ajustarPreviaMobile(); // Reaplica a escala de visualização no celular
+        // Salva os estilos originais para restaurar depois
+        const overOriginal = wrapper.style.overflow;
+        const justOriginal = wrapper.style.justifyContent;
+        const prevOverOriginal = preview.style.overflowX;
+
+        // Remove bloqueios de corte (overflow) e força alinhamento à esquerda
+        wrapper.style.overflow = 'visible';
+        wrapper.style.justifyContent = 'flex-start';
+        preview.style.overflowX = 'visible';
+
+        // Corrige o "espaço em branco no topo": rola a página para o início antes de capturar
+        window.scrollTo(0, 0);
+
+        // Pega o nome do cliente para usar no nome do arquivo baixado
+        let nomeCliente = document.getElementById('cliente').value;
+        if(nomeCliente === "") nomeCliente = "Cliente";
+
+        // Configurações do PDF (Qualidade, formato A4, escala)
+        const opcoes = {
+            margin:       0,
+            filename:     `Orcamento_${nomeCliente}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, scrollY: 0, scrollX: 0, windowWidth: 1000 }, 
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Função auxiliar para arrumar a tela depois de gerar
+        const finalizarProcesso = () => {
+            wrapper.style.overflow = overOriginal;
+            wrapper.style.justifyContent = justOriginal;
+            preview.style.overflowX = prevOverOriginal;
+            ajustarPrevia();
+            if (btn) {
+                btn.innerText = textoOriginal;
+                btn.disabled = false;
+            }
+        };
+
+        // Aciona a biblioteca html2pdf e restaura a redução visual ao final
+        html2pdf().set(opcoes).from(elemento).save().then(() => {
+            finalizarProcesso();
+        }).catch((err) => {
+            console.error("Erro no html2pdf:", err);
+            alert("Erro ao gerar o arquivo PDF: " + err.message);
+            finalizarProcesso();
+        });
+
+    } catch (erro) {
+        console.error("Erro ao preparar PDF:", erro);
+        alert("Ocorreu um erro ao preparar o documento: " + erro.message);
+        if (btn) {
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
         }
-    });
+    }
 }
 
 // ==========================================
@@ -627,4 +753,19 @@ async function testarSistema() {
         console.error('ERRO NO TESTE:', erro);
         alert('Falha no teste: ' + erro.message);
     }
+}
+
+// ==========================================
+// MODO NOTURNO
+// ==========================================
+function toggleTema() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    
+    // Salva a preferência
+    salvarNaMemoria('tema-escuro', isDark ? 'sim' : 'nao');
+    
+    // Altera o ícone do botão
+    const btn = document.getElementById('btn-tema-flutuante');
+    if (btn) btn.innerText = isDark ? '☀️' : '🌙';
 }
