@@ -26,6 +26,7 @@ function aplicarEstadoSessao(session) {
         conteudoApp.style.display = 'block';
         emailLogado.innerText = `Logado como: ${session.user.email}`;
         renderizarTabela();
+        setTimeout(ajustarPreviaMobile, 50); // Folha só fica visível após o login
     } else {
         telaLogin.style.display = 'flex';
         conteudoApp.style.display = 'none';
@@ -377,17 +378,23 @@ function atualizarPreview() {
 
 // Ajusta a altura do contêiner da folha no mobile/tablet para acompanhar o scale dinâmico
 // e impedir que o rodapé/descrições da folha sejam cortados quando o conteúdo cresce.
+// O scale é aplicado via inline (estilo direto) para funcionar mesmo que o CSS não carregue (cache).
 function ajustarPreviaMobile() {
     if (!window.matchMedia('(max-width: 900px)').matches) return;
 
     const wrapper = document.querySelector('.folha-wrapper');
     const folha = document.getElementById('documento-pdf');
-    if (!wrapper || !folha) return;
+    if (!wrapper || !folha || !folha.offsetHeight) return; // folha invisível (sem login) = não ajusta
 
-    // Mesma fórmula do CSS: (100vw - 32px do body - 60px do card) dividido pelos 794px da folha
-    const escala = (window.innerWidth - 92) / 794;
-    const alturaReal = folha.offsetHeight; // altura sem o transform, na escala original
-    wrapper.style.height = (alturaReal * escala) + 'px';
+    // Largura útil = viewport - 32px (padding do body: 16px de cada lado)
+    const escala = (window.innerWidth - 32) / 794;
+
+    // Aplica a redução e a origem direto no elemento (style inline tem prioridade sobre o CSS)
+    folha.style.transform = 'scale(' + escala + ')';
+    folha.style.transformOrigin = 'top center';
+
+    // Altura do contêiner = altura real da folha na escala reduzida
+    wrapper.style.height = (folha.offsetHeight * escala) + 'px';
 }
 
 // Recalcula ao girar/redimensionar a tela e após o carregamento
@@ -496,9 +503,10 @@ function gerarPDF() {
     const elemento = document.getElementById('documento-pdf');
 
     // No celular, remove a redução visual para o PDF sair em tamanho A4 cheio
-    const emTelaPequena = window.matchMedia('(max-width: 768px)').matches;
+    const emTelaPequena = window.matchMedia('(max-width: 900px)').matches;
     if (emTelaPequena) {
         elemento.style.transform = 'none';
+        elemento.style.transformOrigin = 'top center';
     }
 
     // Corrige o "espaço em branco no topo": rola a página para o início antes de capturar
@@ -521,6 +529,7 @@ function gerarPDF() {
     html2pdf().set(opcoes).from(elemento).save().then(() => {
         if (emTelaPequena) {
             elemento.style.transform = '';
+            ajustarPreviaMobile(); // Reaplica a escala de visualização no celular
         }
     });
 }

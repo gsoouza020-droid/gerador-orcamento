@@ -227,17 +227,18 @@ input:focus {
     }
 
     /* Reserva o espaço da folha A4 já no tamanho reduzido
-       (100vw - 32px de padding do body - 60px do card de preview) */
+       (100vw - 32px = padding do body: 16px de cada lado)
+       O JavaScript recalcula este valor na medida real do conteúdo */
     .folha-wrapper {
         width: 100%;
-        height: calc((100vw - 92px) * 1.41);
+        height: calc((100vw - 32px) * 1.41);
         overflow: hidden;
     }
 
     /* Reduz a folha A4 (210mm = 794px) proporcionalmente ao espaço real disponível */
     .folha-a4 {
         transform-origin: top center;
-        transform: scale(calc((100vw - 92px) * 0.0012594));
+        transform: scale(calc((100vw - 32px) * 0.0012594));
     }
 }
 
