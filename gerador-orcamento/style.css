@@ -205,7 +205,7 @@ input:focus {
 /* ============================
    RESPONSIVIDADE - CELULAR
    ============================ */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     body {
         padding: 16px;
     }
@@ -226,17 +226,18 @@ input:focus {
         gap: 0;
     }
 
-    /* Reserva o espaço da folha A4 já no tamanho reduzido */
+    /* Reserva o espaço da folha A4 já no tamanho reduzido
+       (100vw - 32px de padding do body - 60px do card de preview) */
     .folha-wrapper {
         width: 100%;
-        height: calc((100vw - 32px) * 1.41);
+        height: calc((100vw - 92px) * 1.41);
         overflow: hidden;
     }
 
-    /* Reduz a folha A4 (210mm = 794px) proporcionalmente à largura da tela */
+    /* Reduz a folha A4 (210mm = 794px) proporcionalmente ao espaço real disponível */
     .folha-a4 {
         transform-origin: top center;
-        transform: scale(calc((100vw - 32px) * 0.0012594));
+        transform: scale(calc((100vw - 92px) * 0.0012594));
     }
 }
 
@@ -409,7 +410,7 @@ input:focus {
     font-size: 14px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     #tela-login {
         min-height: calc(100vh - 32px);
     }
@@ -420,7 +421,7 @@ input:focus {
     }
 
     /* ==========================================
-       AJUSTES RESPONSIVOS DEFINITIVOS (MOBILE)
+       AJUSTES RESPONSIVOS DEFINITIVOS (MOBILE/TABLET)
        ========================================== */
 
     /* Impede que paddings estiquem caixas para fora da tela */
@@ -436,15 +437,8 @@ input:focus {
         margin: 0 !important;
     }
 
-    body {
-        padding: 0 !important;
-    }
-
-    /* Container sempre em coluna, centralizado, com respiro nas laterais */
+    /* Container sempre como lista empilhada, centralizada */
     .container {
-        width: 100% !important;
-        padding: 12px !important;
-        margin: 0 auto !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
@@ -457,7 +451,8 @@ input:focus {
         min-width: 0 !important;
     }
 
-    /* Inputs cabem 100% DENTRO do formulário (botões da tabela/histórico ficam intactos) */
+    /* Inputs do formulário flúidos; 16px evita o zoom automático do iPhone ao digitar
+       (botões do topo e da tabela de histórico ficam intactos) */
     form input,
     form select,
     form textarea,
@@ -465,5 +460,6 @@ input:focus {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
+        font-size: 16px !important;
     }
 }
