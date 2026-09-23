@@ -419,9 +419,51 @@ input:focus {
         padding: 16px;
     }
 
-    /* Trava a largura e impede scroll horizontal no celular */
+    /* ==========================================
+       AJUSTES RESPONSIVOS DEFINITIVOS (MOBILE)
+       ========================================== */
+
+    /* Impede que paddings estiquem caixas para fora da tela */
+    *, *::before, *::after {
+        box-sizing: border-box !important;
+    }
+
+    /* Trava a largura e impede o scroll horizontal (balanço) */
     html, body {
-        max-width: 100vw;
-        overflow-x: hidden;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        margin: 0 !important;
+    }
+
+    body {
+        padding: 0 !important;
+    }
+
+    /* Container sempre em coluna, centralizado, com respiro nas laterais */
+    .container {
+        width: 100% !important;
+        padding: 12px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+
+    /* Formulário usa toda a largura disponível sem estourar */
+    form {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Inputs cabem 100% DENTRO do formulário (botões da tabela/histórico ficam intactos) */
+    form input,
+    form select,
+    form textarea,
+    form button {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
     }
 }
