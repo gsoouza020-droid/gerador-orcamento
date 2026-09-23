@@ -435,8 +435,16 @@ input:focus {
         width: 100% !important;
         max-width: 100vw !important;
         overflow-x: hidden !important;
+        overflow-y: auto;
         margin: 0 !important;
         position: relative !important;
+        overscroll-behavior-x: none !important; /* impede o "esticar" da tela para os lados no mobile */
+    }
+
+    /* Nenhuma imagem pode estourar a largura da tela */
+    img {
+        max-width: 100% !important;
+        height: auto;
     }
 
     /* Container sempre como lista empilhada, centralizada, sem empurrões para o lado */
