@@ -371,7 +371,30 @@ function atualizarPreview() {
     document.getElementById('out-pecas').innerText = pecas.toLocaleString('pt-BR', formatoMoeda);
     document.getElementById('out-mao-de-obra').innerText = maoDeObra.toLocaleString('pt-BR', formatoMoeda);
     document.getElementById('out-total').innerText = total.toLocaleString('pt-BR', formatoMoeda);
+
+    ajustarPreviaMobile();
 }
+
+// Ajusta a altura do contêiner da folha no mobile/tablet para acompanhar o scale dinâmico
+// e impedir que o rodapé/descrições da folha sejam cortados quando o conteúdo cresce.
+function ajustarPreviaMobile() {
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+
+    const wrapper = document.querySelector('.folha-wrapper');
+    const folha = document.getElementById('documento-pdf');
+    if (!wrapper || !folha) return;
+
+    // Mesma fórmula do CSS: (100vw - 32px do body - 60px do card) dividido pelos 794px da folha
+    const escala = (window.innerWidth - 92) / 794;
+    const alturaReal = folha.offsetHeight; // altura sem o transform, na escala original
+    wrapper.style.height = (alturaReal * escala) + 'px';
+}
+
+// Recalcula ao girar/redimensionar a tela e após o carregamento
+window.addEventListener('resize', ajustarPreviaMobile);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(ajustarPreviaMobile, 100);
+});
 
 const GEMINI_API_KEY = 'AQ.Ab8RN6KQdhCTNciBmk4Wm8ICEiKQ0YtvnBIIkzcs5xI-c4U9Qw';
 
