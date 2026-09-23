@@ -5,6 +5,28 @@ let supabaseCliente = null;
 const supabaseUrl = 'https://wkjaafjnpzlvacvgszga.supabase.co';
 const supabaseKey = 'sb_publishable_A9jDf4FTuaPwXMSu8UOHvg_au2AbHt1';
 
+// ==========================================
+// ARMAZENAMENTO SEGURO (localStorage protegido)
+// O Edge pode bloquear o acesso ao localStorage ("Tracking Prevention").
+// Com try/catch o app segue funcionando normalmente, sem travar.
+// ==========================================
+function salvarNaMemoria(chave, valor) {
+    try {
+        window.localStorage.setItem(chave, valor);
+        return true;
+    } catch (erro) {
+        return false;
+    }
+}
+
+function lerDaMemoria(chave) {
+    try {
+        return window.localStorage.getItem(chave);
+    } catch (erro) {
+        return null;
+    }
+}
+
 // Se o CDN do Supabase falhar, o gerador de orçamentos continua funcionando
 // (nome diferente do global "supabase" que a biblioteca cria, para NÃO conflitar)
 if (window.supabase) {
@@ -281,7 +303,7 @@ function atualizarEmpresa() {
     document.getElementById('out-meu-telefone').innerText = `Tel: ${telefone}`;
 
     // Salva automaticamente no navegador do usuário
-    localStorage.setItem('dadosMinhaEmpresa', JSON.stringify({
+    salvarNaMemoria('dadosMinhaEmpresa', JSON.stringify({
         empresa,
         cnpj,
         telefone
@@ -297,14 +319,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('hora-atual').innerText = `Hora: ${horaAtual}`;
 
     // 1. Carrega a logo salva (se existir)
-    const logoGuardado = localStorage.getItem('meuLogoOrcamento');
+    const logoGuardado = lerDaMemoria('meuLogoOrcamento');
     if (logoGuardado) {
         document.getElementById('img-logo-preview').src = logoGuardado;
         document.getElementById('img-logo-preview').style.display = 'block';
     }
 
     // 2. Carrega os dados da empresa salvos (se existirem)
-    const dadosSalvos = localStorage.getItem('dadosMinhaEmpresa');
+    const dadosSalvos = lerDaMemoria('dadosMinhaEmpresa');
     if (dadosSalvos) {
         const empresaObj = JSON.parse(dadosSalvos);
 
@@ -333,7 +355,7 @@ function carregarLogo(event) {
             document.getElementById('img-logo-preview').style.display = 'block';
             
             // Guarda a imagem no localStorage para não se perder ao atualizar a página
-            localStorage.setItem('meuLogoOrcamento', resultadoBase64);
+            salvarNaMemoria('meuLogoOrcamento', resultadoBase64);
         };
         
         // Inicia a leitura do ficheiro
