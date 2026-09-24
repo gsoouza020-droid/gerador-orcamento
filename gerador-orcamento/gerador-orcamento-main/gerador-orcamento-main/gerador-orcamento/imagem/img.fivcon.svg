@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Fundo azul do documento -->
+  <rect x="15" y="10" width="70" height="80" rx="8" fill="#2563eb" />
+  <!-- Linhas simulando o texto do orçamento -->
+  <path d="M30 30 h40 M30 50 h40 M30 70 h15" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+  <!-- Círculo verde de aprovação -->
+  <circle cx="75" cy="75" r="18" fill="#10b981" />
+  <!-- Símbolo de "Check" (Certo) -->
+  <path d="M67 75 l5 5 l11 -11" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
